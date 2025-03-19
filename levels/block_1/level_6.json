@@ -1,0 +1,32 @@
+{
+    "name": "\u0423\u0440\u043e\u0432\u0435\u043d\u044c 6 (\u0431\u043b\u043e\u043a 1)",
+    "buttons_count": 2,
+    "bulbs_count": 3,
+    "colors_count": 2,
+    "connections": [
+        [
+            0,
+            0
+        ],
+        [
+            1,
+            1
+        ],
+        [
+            1,
+            2
+        ]
+    ],
+    "target_states": [
+        0,
+        0,
+        0
+    ],
+    "initial_states": [
+        1,
+        0,
+        0
+    ],
+    "complexity": 2.1760912590556813,
+    "block": 1
+}
