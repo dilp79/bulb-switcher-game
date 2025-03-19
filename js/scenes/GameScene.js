@@ -154,19 +154,19 @@ class GameScene extends Phaser.Scene {
         // Название уровня и блока
         const blockText = this.add.text(
             config.gameWidth / 2, 
-            25, 
-            `Блок ${this.blockName} - Уровень ${this.levelIndex + 1}`, 
+            30, 
+            `Блок ${this.blockName} - Уровень ${this.levelIndex + 1}: ${this.level.name}`, 
             config.styles.heading
         ).setOrigin(0.5).setFontSize(20);
         
         // Счетчик ходов с фоном
         const movesCountBg = this.add.graphics();
         movesCountBg.fillStyle(0x2d3436, 0.7);
-        movesCountBg.fillRoundedRect(config.gameWidth / 2 - 120, 40, 100, 30, 10);
+        movesCountBg.fillRoundedRect(config.gameWidth / 2 - 120, 55, 100, 30, 10);
         
         this.moveCountText = this.add.text(
             config.gameWidth / 2 - 70, 
-            55, 
+            70, 
             `Ходов: ${this.moveCount}`, 
             config.styles.text
         ).setOrigin(0.5);
@@ -174,22 +174,35 @@ class GameScene extends Phaser.Scene {
         // Таймер с фоном
         const timerBg = this.add.graphics();
         timerBg.fillStyle(0x2d3436, 0.7);
-        timerBg.fillRoundedRect(config.gameWidth / 2 + 20, 40, 100, 30, 10);
+        timerBg.fillRoundedRect(config.gameWidth / 2 + 20, 55, 100, 30, 10);
         
         this.timerText = this.add.text(
             config.gameWidth / 2 + 70, 
-            55, 
+            70, 
             '00:00', 
             config.styles.text
         ).setOrigin(0.5);
         
-        // Название уровня
-        this.add.text(
-            config.gameWidth / 2, 
-            80, 
-            this.level.name, 
-            config.styles.text
-        ).setOrigin(0.5).setFontSize(16);
+        // Добавляем информацию о предыдущем рекорде
+        const previousResult = levelManager.getLevelResult(this.blockName, this.levelIndex);
+        if (previousResult) {
+            const minutes = Math.floor(previousResult.time / 60);
+            const seconds = previousResult.time % 60;
+            const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Фон для рекорда
+            const recordBg = this.add.graphics();
+            recordBg.fillStyle(0x27ae60, 0.7);
+            recordBg.fillRoundedRect(350, 15, 200, 25, 10);
+            
+            // Текст рекорда
+            this.add.text(
+                450,
+                28,
+                `Рекорд: ${timeString}, ${previousResult.moves} ходов`,
+                { ...config.styles.text, fontSize: 12 }
+            ).setOrigin(0.5);
+        }
 
         // ===== ПРАВАЯ ЧАСТЬ ШАПКИ (100 пикселей) =====
         // Кнопка подсказки
@@ -500,36 +513,30 @@ class GameScene extends Phaser.Scene {
             16
         );
         
-        // Создаем анимированные конфетти в разных точках экрана
+        // Создаем анимированные конфетти на заднем плане (на весь экран)
         const confettiSprites = [];
         
-        // Создаем несколько анимированных конфетти в разных точках экрана
-        for (let i = 0; i < 20; i++) {
-            const x = Phaser.Math.Between(100, config.gameWidth - 100);
-            const y = Phaser.Math.Between(100, 200);
+        // Создаем статичные большие конфетти по всему экрану
+        for (let i = 0; i < 15; i++) {
+            const x = Phaser.Math.Between(50, config.gameWidth - 50);
+            const y = Phaser.Math.Between(50, config.gameHeight - 50);
             
             // Создаем спрайт с анимацией конфетти
             const confetti = this.add.sprite(x, y, 'confetti_animation');
-            confetti.setScale(1.2); // Увеличиваем размер
+            confetti.setScale(3); // Увеличиваем размер в 3 раза
             confetti.setTint(0xffffff); // Делаем ярче
-            confetti.setDepth(100); // Устанавливаем высокий z-index
+            confetti.setDepth(50); // Не самый передний план, но перед фоном
             
             // Запускаем анимацию
             confetti.play('confetti_anim');
             
-            // Добавляем физику для падения
-            this.physics.add.existing(confetti);
-            confetti.body.setGravityY(80 + Phaser.Math.Between(0, 120)); // Немного уменьшаем гравитацию
-            confetti.body.setVelocity(
-                Phaser.Math.Between(-100, 100),
-                Phaser.Math.Between(-50, -150)
-            );
-            
-            // Вращение
+            // Добавляем плавную анимацию прозрачности вместо вращения
             this.tweens.add({
                 targets: confetti,
-                angle: Phaser.Math.Between(-360, 360),
-                duration: 3000,
+                alpha: { from: 0.7, to: 1 },
+                duration: 2000 + Phaser.Math.Between(0, 1000),
+                yoyo: true,
+                repeat: -1,
                 ease: 'Sine.easeInOut'
             });
             
@@ -542,7 +549,7 @@ class GameScene extends Phaser.Scene {
             config.gameHeight / 2 - 100,
             'Уровень пройден!',
             { ...config.styles.heading, fontSize: 32 }
-        ).setOrigin(0.5);
+        ).setOrigin(0.5).setDepth(101);
         
         // Статистика
         const minutes = Math.floor(time / 60);
@@ -554,14 +561,38 @@ class GameScene extends Phaser.Scene {
             config.gameHeight / 2 - 30,
             `Время: ${timeString}`,
             config.styles.text
-        ).setOrigin(0.5);
+        ).setOrigin(0.5).setDepth(101);
         
         this.add.text(
             config.gameWidth / 2,
             config.gameHeight / 2 + 10,
             `Ходов: ${this.moveCount}`,
             config.styles.text
-        ).setOrigin(0.5);
+        ).setOrigin(0.5).setDepth(101);
+        
+        // Добавляем информацию о предыдущем рекорде, если он был
+        const previousResult = levelManager.getLevelResult(this.blockName, this.levelIndex);
+        if (previousResult && (previousResult.time !== time || previousResult.moves !== this.moveCount)) {
+            const prevMinutes = Math.floor(previousResult.time / 60);
+            const prevSeconds = previousResult.time % 60;
+            const prevTimeString = `${prevMinutes}:${prevSeconds.toString().padStart(2, '0')}`;
+            
+            // Сравниваем текущий результат с предыдущим
+            let recordText = 'Предыдущий результат: ';
+            let recordColor = '#ffffff';
+            
+            if (time < previousResult.time || (time === previousResult.time && this.moveCount < previousResult.moves)) {
+                recordText = 'Новый рекорд! Предыдущий: ';
+                recordColor = '#4cd137';
+            }
+            
+            this.add.text(
+                config.gameWidth / 2,
+                config.gameHeight / 2 + 40,
+                `${recordText}${prevTimeString}, ${previousResult.moves} ходов`,
+                { ...config.styles.text, fontSize: 14, color: recordColor }
+            ).setOrigin(0.5).setDepth(101);
+        }
         
         // Проверяем наличие следующего уровня
         const nextLevelIndex = this.levelIndex + 1;
@@ -573,20 +604,22 @@ class GameScene extends Phaser.Scene {
         nextBtnBg.fillStyle(0x4cd137, 1);
         nextBtnBg.fillRoundedRect(
             config.gameWidth / 2 - 150,
-            config.gameHeight / 2 + 70 - 20,
+            config.gameHeight / 2 + 80 - 20,
             300,
             40,
             10
         );
+        nextBtnBg.setDepth(101);
         
         const nextButton = this.add.text(
             config.gameWidth / 2,
-            config.gameHeight / 2 + 70,
+            config.gameHeight / 2 + 80,
             hasNextLevel ? 'Следующий уровень' : 'Вернуться к выбору уровня',
             config.styles.button
         )
         .setOrigin(0.5)
         .setInteractive()
+        .setDepth(101)
         .on('pointerup', () => {
             this.sound.play('button_click');
             if (hasNextLevel) {
@@ -600,7 +633,7 @@ class GameScene extends Phaser.Scene {
             nextBtnBg.fillStyle(0x44bd32, 1);
             nextBtnBg.fillRoundedRect(
                 config.gameWidth / 2 - 150,
-                config.gameHeight / 2 + 70 - 20,
+                config.gameHeight / 2 + 80 - 20,
                 300,
                 40,
                 10
@@ -612,7 +645,7 @@ class GameScene extends Phaser.Scene {
             nextBtnBg.fillStyle(0x4cd137, 1);
             nextBtnBg.fillRoundedRect(
                 config.gameWidth / 2 - 150,
-                config.gameHeight / 2 + 70 - 20,
+                config.gameHeight / 2 + 80 - 20,
                 300,
                 40,
                 10
@@ -625,20 +658,22 @@ class GameScene extends Phaser.Scene {
         menuBtnBg.fillStyle(0x4b7bec, 1);
         menuBtnBg.fillRoundedRect(
             config.gameWidth / 2 - 150,
-            config.gameHeight / 2 + 120 - 20,
+            config.gameHeight / 2 + 130 - 20,
             300,
             40,
             10
         );
+        menuBtnBg.setDepth(101);
         
         const menuButton = this.add.text(
             config.gameWidth / 2,
-            config.gameHeight / 2 + 120,
+            config.gameHeight / 2 + 130,
             'Выбор уровня',
             config.styles.button
         )
         .setOrigin(0.5)
         .setInteractive()
+        .setDepth(101)
         .on('pointerup', () => {
             this.sound.play('button_click');
             this.scene.start('LevelSelectScene');
@@ -648,7 +683,7 @@ class GameScene extends Phaser.Scene {
             menuBtnBg.fillStyle(0x3867d6, 1);
             menuBtnBg.fillRoundedRect(
                 config.gameWidth / 2 - 150,
-                config.gameHeight / 2 + 120 - 20,
+                config.gameHeight / 2 + 130 - 20,
                 300,
                 40,
                 10
@@ -660,7 +695,7 @@ class GameScene extends Phaser.Scene {
             menuBtnBg.fillStyle(0x4b7bec, 1);
             menuBtnBg.fillRoundedRect(
                 config.gameWidth / 2 - 150,
-                config.gameHeight / 2 + 120 - 20,
+                config.gameHeight / 2 + 130 - 20,
                 300,
                 40,
                 10
@@ -672,10 +707,10 @@ class GameScene extends Phaser.Scene {
         if (hasNextLevel) {
             const countdown = this.add.text(
                 config.gameWidth / 2,
-                config.gameHeight / 2 + 160,
+                config.gameHeight / 2 + 170,
                 'Автопереход через 3...',
                 { ...config.styles.text, fontSize: 18 }
-            ).setOrigin(0.5);
+            ).setOrigin(0.5).setDepth(101);
             
             let timeLeft = 3;
             const countdownTimer = this.time.addEvent({
@@ -710,14 +745,13 @@ class GameScene extends Phaser.Scene {
             });
         }
         
-        // Удаляем спрайты конфетти через 5 секунд
+        // Удаляем спрайты конфетти через 5 секунд после перехода к следующему уровню
         this.time.delayedCall(5000, () => {
             confettiSprites.forEach(sprite => {
-                // Плавно уменьшаем и скрываем спрайт
+                // Плавно скрываем спрайт
                 this.tweens.add({
                     targets: sprite,
                     alpha: 0,
-                    scale: 0.1,
                     duration: 1000,
                     onComplete: () => sprite.destroy()
                 });
