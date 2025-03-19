@@ -516,32 +516,21 @@ class GameScene extends Phaser.Scene {
         // Создаем анимированные конфетти на заднем плане (на весь экран)
         const confettiSprites = [];
         
-        // Создаем статичные большие конфетти по всему экрану
-        for (let i = 0; i < 15; i++) {
-            const x = Phaser.Math.Between(50, config.gameWidth - 50);
-            const y = Phaser.Math.Between(50, config.gameHeight - 50);
-            
-            // Создаем спрайт с анимацией конфетти
-            const confetti = this.add.sprite(x, y, 'confetti_animation');
-            confetti.setScale(3); // Увеличиваем размер в 3 раза
-            confetti.setTint(0xffffff); // Делаем ярче
-            confetti.setDepth(50); // Не самый передний план, но перед фоном
-            
-            // Запускаем анимацию
-            confetti.play('confetti_anim');
-            
-            // Добавляем плавную анимацию прозрачности вместо вращения
-            this.tweens.add({
-                targets: confetti,
-                alpha: { from: 0.7, to: 1 },
-                duration: 2000 + Phaser.Math.Between(0, 1000),
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-            
-            confettiSprites.push(confetti);
-        }
+        // Создаем одну анимацию конфетти в центре экрана
+        const confetti = this.add.sprite(
+            config.gameWidth / 2,
+            config.gameHeight / 2,
+            'confetti_animation'
+        );
+        confetti.setDepth(50);
+        
+        // Запускаем анимацию один раз
+        confetti.play('confetti_anim');
+        confetti.once('animationcomplete', () => {
+            confetti.destroy();
+        });
+        
+        confettiSprites.push(confetti);
         
         // Текст сообщения
         this.add.text(
@@ -731,31 +720,19 @@ class GameScene extends Phaser.Scene {
             nextButton.on('pointerdown', () => {
                 countdownTimer.remove();
                 countdown.destroy();
-                
-                // Удаляем спрайты конфетти
-                confettiSprites.forEach(sprite => sprite.destroy());
             });
             
             menuButton.on('pointerdown', () => {
                 countdownTimer.remove();
                 countdown.destroy();
-                
-                // Удаляем спрайты конфетти
-                confettiSprites.forEach(sprite => sprite.destroy());
             });
         }
         
-        // Удаляем спрайты конфетти через 5 секунд после перехода к следующему уровню
+        // Удаляем конфетти через 5 секунд после перехода к следующему уровню, если она все еще существует
         this.time.delayedCall(5000, () => {
-            confettiSprites.forEach(sprite => {
-                // Плавно скрываем спрайт
-                this.tweens.add({
-                    targets: sprite,
-                    alpha: 0,
-                    duration: 1000,
-                    onComplete: () => sprite.destroy()
-                });
-            });
+            if (confetti && confetti.active) {
+                confetti.destroy();
+            }
         });
     }
 
