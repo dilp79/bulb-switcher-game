@@ -105,9 +105,6 @@ venv.bak/
 *.db
 
 # Pygame specific
-sounds/*.wav
-*.mp3
-*.ogg
 
 # Logs
 logs

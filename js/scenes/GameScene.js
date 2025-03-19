@@ -162,10 +162,10 @@ class GameScene extends Phaser.Scene {
         // Счетчик ходов с фоном
         const movesCountBg = this.add.graphics();
         movesCountBg.fillStyle(0x2d3436, 0.7);
-        movesCountBg.fillRoundedRect(config.gameWidth / 2 - 120, 55, 100, 30, 10);
+        movesCountBg.fillRoundedRect(config.gameWidth / 2 - 180, 55, 100, 30, 10);
         
         this.moveCountText = this.add.text(
-            config.gameWidth / 2 - 70, 
+            config.gameWidth / 2 - 130, 
             70, 
             `Ходов: ${this.moveCount}`, 
             config.styles.text
@@ -174,10 +174,10 @@ class GameScene extends Phaser.Scene {
         // Таймер с фоном
         const timerBg = this.add.graphics();
         timerBg.fillStyle(0x2d3436, 0.7);
-        timerBg.fillRoundedRect(config.gameWidth / 2 + 20, 55, 100, 30, 10);
+        timerBg.fillRoundedRect(config.gameWidth / 2 - 60, 55, 100, 30, 10);
         
         this.timerText = this.add.text(
-            config.gameWidth / 2 + 70, 
+            config.gameWidth / 2 - 10, 
             70, 
             '00:00', 
             config.styles.text
@@ -193,13 +193,13 @@ class GameScene extends Phaser.Scene {
             // Фон для рекорда
             const recordBg = this.add.graphics();
             recordBg.fillStyle(0x27ae60, 0.7);
-            recordBg.fillRoundedRect(350, 15, 200, 25, 10);
+            recordBg.fillRoundedRect(config.gameWidth / 2 + 60, 55, 120, 30, 10);
             
             // Текст рекорда
             this.add.text(
-                450,
-                28,
-                `Рекорд: ${timeString}, ${previousResult.moves} ходов`,
+                config.gameWidth / 2 + 120,
+                70,
+                `Рекорд: ${timeString}`, 
                 { ...config.styles.text, fontSize: 12 }
             ).setOrigin(0.5);
         }
