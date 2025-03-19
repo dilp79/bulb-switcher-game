@@ -16,7 +16,8 @@ const gameConfig = {
         MainMenuScene,
         LevelSelectScene,
         GameScene,
-        LevelEditorScene
+        LevelEditorScene,
+        HelpScene
     ],
     scale: {
         mode: Phaser.Scale.FIT,

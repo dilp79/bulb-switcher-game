@@ -35,10 +35,22 @@ class LevelManager {
             
             const levelIndex = await response.json();
             const levelPromises = levelIndex.map(levelFile => 
-                fetch(`${directory}/${levelFile}`).then(res => res.json())
+                fetch(`${directory}/${levelFile}`).then(res => {
+                    if (!res.ok) {
+                        console.error(`Failed to load level file ${levelFile}: ${res.status}`);
+                        return null;
+                    }
+                    return res.json();
+                }).catch(err => {
+                    console.error(`Error loading level file ${levelFile}:`, err);
+                    return null;
+                })
             );
             
-            this.levels[blockName] = await Promise.all(levelPromises);
+            const levelResults = await Promise.all(levelPromises);
+            // Фильтруем null значения, если какие-то уровни не загрузились
+            this.levels[blockName] = levelResults.filter(level => level !== null);
+            console.log(`Loaded ${this.levels[blockName].length} levels for ${blockName}`);
         } catch (error) {
             console.error(`Error loading levels for ${blockName}:`, error);
             // В случае ошибки пробуем загрузить уровни напрямую

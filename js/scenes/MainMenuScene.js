@@ -146,10 +146,22 @@ class MainMenuScene extends Phaser.Scene {
             buttonHeight
         );
         
-        // Кнопка редактора уровней
+        // Кнопка "Как играть"
         this.createButton(
             config.gameWidth / 2,
             startY + (buttonHeight + buttonSpacing) * 2,
+            'Как играть',
+            () => {
+                this.scene.start('HelpScene');
+            },
+            buttonWidth,
+            buttonHeight
+        );
+        
+        // Кнопка редактора уровней
+        this.createButton(
+            config.gameWidth / 2,
+            startY + (buttonHeight + buttonSpacing) * 3,
             'Редактор уровней',
             () => {
                 this.scene.start('LevelEditorScene');
@@ -165,6 +177,17 @@ class MainMenuScene extends Phaser.Scene {
             'Версия 1.0',
             { ...config.styles.text, fontSize: 14, color: '#999999' }
         ).setOrigin(1, 1);
+        
+        // Проверяем, первый ли это запуск игры
+        if (!localStorage.getItem('gameFirstLaunchShown')) {
+            // Запускаем сцену "Как играть" при первом запуске
+            localStorage.setItem('gameFirstLaunchShown', 'true');
+            
+            // Показываем инструкцию через небольшую задержку
+            this.time.delayedCall(100, () => {
+                this.scene.start('HelpScene');
+            });
+        }
     }
 
     createButton(x, y, text, callback, width, height) {

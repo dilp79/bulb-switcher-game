@@ -473,40 +473,6 @@ class GameScene extends Phaser.Scene {
         // Воспроизводим звук победы
         this.sound.play('victory');
         
-        // Создаем анимированные конфетти в разных точках экрана
-        const confettiSprites = [];
-        
-        // Создаем несколько анимированных конфетти в разных точках экрана
-        for (let i = 0; i < 12; i++) {
-            const x = Phaser.Math.Between(100, config.gameWidth - 100);
-            const y = Phaser.Math.Between(100, 200);
-            
-            // Создаем спрайт с анимацией конфетти
-            const confetti = this.add.sprite(x, y, 'confetti_animation');
-            confetti.setScale(0.8);
-            
-            // Запускаем анимацию
-            confetti.play('confetti_anim');
-            
-            // Добавляем физику для падения
-            this.physics.add.existing(confetti);
-            confetti.body.setGravityY(100 + Phaser.Math.Between(0, 150));
-            confetti.body.setVelocity(
-                Phaser.Math.Between(-100, 100),
-                Phaser.Math.Between(-50, -150)
-            );
-            
-            // Вращение
-            this.tweens.add({
-                targets: confetti,
-                angle: Phaser.Math.Between(-360, 360),
-                duration: 3000,
-                ease: 'Sine.easeInOut'
-            });
-            
-            confettiSprites.push(confetti);
-        }
-        
         // Создаем затемнение
         const overlay = this.add.graphics();
         overlay.fillStyle(0x000000, 0.7);
@@ -533,6 +499,42 @@ class GameScene extends Phaser.Scene {
             300,
             16
         );
+        
+        // Создаем анимированные конфетти в разных точках экрана
+        const confettiSprites = [];
+        
+        // Создаем несколько анимированных конфетти в разных точках экрана
+        for (let i = 0; i < 20; i++) {
+            const x = Phaser.Math.Between(100, config.gameWidth - 100);
+            const y = Phaser.Math.Between(100, 200);
+            
+            // Создаем спрайт с анимацией конфетти
+            const confetti = this.add.sprite(x, y, 'confetti_animation');
+            confetti.setScale(1.2); // Увеличиваем размер
+            confetti.setTint(0xffffff); // Делаем ярче
+            confetti.setDepth(100); // Устанавливаем высокий z-index
+            
+            // Запускаем анимацию
+            confetti.play('confetti_anim');
+            
+            // Добавляем физику для падения
+            this.physics.add.existing(confetti);
+            confetti.body.setGravityY(80 + Phaser.Math.Between(0, 120)); // Немного уменьшаем гравитацию
+            confetti.body.setVelocity(
+                Phaser.Math.Between(-100, 100),
+                Phaser.Math.Between(-50, -150)
+            );
+            
+            // Вращение
+            this.tweens.add({
+                targets: confetti,
+                angle: Phaser.Math.Between(-360, 360),
+                duration: 3000,
+                ease: 'Sine.easeInOut'
+            });
+            
+            confettiSprites.push(confetti);
+        }
         
         // Текст сообщения
         this.add.text(
