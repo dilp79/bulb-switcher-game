@@ -1,0 +1,39 @@
+{
+    "blocks": [
+        {
+            "id": "block_1",
+            "title": "Блок 1",
+            "description": "Разминка: короткие связи и два состояния ламп.",
+            "directory": "levels/block_1",
+            "index": "index.json"
+        },
+        {
+            "id": "block_2",
+            "title": "Блок 2",
+            "description": "Средняя сложность: больше узлов и три состояния.",
+            "directory": "levels/block_2",
+            "index": "index.json"
+        },
+        {
+            "id": "block_3",
+            "title": "Блок 3",
+            "description": "Продвинутые схемы: больше связей и четыре состояния.",
+            "directory": "levels/block_3",
+            "index": "index.json"
+        },
+        {
+            "id": "block_4",
+            "title": "Блок 4",
+            "description": "Дополнительный архивный набор на поле 8x8.",
+            "directory": "levels/block_4",
+            "index": "index.json"
+        },
+        {
+            "id": "block_5",
+            "title": "Блок 5",
+            "description": "Экспертный архивный набор с плотными связями.",
+            "directory": "levels/block_5",
+            "index": "index.json"
+        }
+    ]
+}
