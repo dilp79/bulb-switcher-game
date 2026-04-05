@@ -1267,3 +1267,9 @@ img {
     margin-bottom: 16px;
     text-align: center;
 }
+
+.level-card-stars {
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    color: var(--primary);
+}

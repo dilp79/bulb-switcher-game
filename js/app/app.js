@@ -1044,6 +1044,7 @@ export class BulbSwitcherApp {
                 <div class="record-strip">
                     <span>Рекорд: ${result ? formatTime(result.time) : '—'}</span>
                     <span>Ходы: ${result ? result.moves : '—'}</span>
+                    ${result?.stars ? `<span class="level-card-stars">${'★'.repeat(result.stars)}${'☆'.repeat(3 - result.stars)}</span>` : ''}
                 </div>
                 <div class="level-card-actions">
                     <button class="primary-button" data-action="${action}" ${targetAttrs}>Играть</button>
