@@ -305,6 +305,12 @@ export function findLevelSolution(level) {
     return search(0);
 }
 
+export function getOptimalMoveCount(level) {
+    const solution = findLevelSolution(level);
+    if (!solution) return null;
+    return solution.reduce((sum, presses) => sum + presses, 0);
+}
+
 export function calculateStars({ optimalMoves, actualMoves, elapsedSeconds, hintUsed }) {
     if (hintUsed || optimalMoves === null) {
         return 1;
