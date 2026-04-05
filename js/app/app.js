@@ -230,7 +230,7 @@ export class BulbSwitcherApp {
             }
 
             this.state.game.elapsedSeconds = Math.floor((Date.now() - this.state.game.startedAt) / 1000);
-            this.render();
+            this.updateGameRuntime();
         }, 1000);
     }
 
@@ -243,6 +243,22 @@ export class BulbSwitcherApp {
         if (this.hintTimerId) {
             window.clearTimeout(this.hintTimerId);
             this.hintTimerId = null;
+        }
+    }
+
+    updateGameRuntime() {
+        if (this.state.screen !== 'game' || !this.state.game || this.state.game.victory) {
+            return;
+        }
+
+        const movesNode = this.root.querySelector('[data-runtime="moves"]');
+        if (movesNode) {
+            movesNode.textContent = String(this.state.game.moves);
+        }
+
+        const timeNode = this.root.querySelector('[data-runtime="time"]');
+        if (timeNode) {
+            timeNode.textContent = formatTime(this.state.game.elapsedSeconds);
         }
     }
 
@@ -468,7 +484,7 @@ export class BulbSwitcherApp {
         }
 
         const level = this.state.editor.level;
-        const modulo = level.colors_count + 1;
+        const modulo = level.colors_count;
         level.initial_states[bulbIndex] = (level.initial_states[bulbIndex] + 1) % modulo;
         this.state.editor.validationErrors = [];
         this.render();
@@ -914,7 +930,7 @@ export class BulbSwitcherApp {
                 <article class="panel feature-card">
                     <p class="eyebrow">Редактор</p>
                     <h2>Соберите свой щит</h2>
-                    <p>Меняйте число кнопок, ламп и цветов, собирайте проводку и тут же проверяйте, как она играется.</p>
+                    <p>Меняйте число кнопок, ламп и состояний, собирайте проводку и тут же проверяйте, как она играется.</p>
                     <button class="secondary-button" data-action="nav-editor">Открыть редактор</button>
                 </article>
             </section>
@@ -995,7 +1011,7 @@ export class BulbSwitcherApp {
                 <div class="meta-list">
                     <span>${level.buttons_count} ${pluralize(level.buttons_count, 'кнопка', 'кнопки', 'кнопок')}</span>
                     <span>${level.bulbs_count} ${pluralize(level.bulbs_count, 'лампа', 'лампы', 'ламп')}</span>
-                    <span>${level.colors_count} ${pluralize(level.colors_count, 'цвет', 'цвета', 'цветов')}</span>
+                    <span>${level.colors_count} ${pluralize(level.colors_count, 'состояние', 'состояния', 'состояний')}</span>
                     <span>Сложность ${level.complexity.toFixed(2)}</span>
                 </div>
                 <div class="record-strip">
@@ -1035,9 +1051,9 @@ export class BulbSwitcherApp {
                     <p class="lead">${this.describeLevel(session.level)}</p>
                 </div>
                 <div class="stat-row compact">
-                    ${this.renderStatCard('Ходы', String(session.moves))}
-                    ${this.renderStatCard('Время', formatTime(session.elapsedSeconds))}
-                    ${this.renderStatCard('Рекорд', result ? `${formatTime(result.time)} / ${result.moves}` : '—')}
+                        ${this.renderStatCard('Ходы', String(session.moves), 'data-runtime="moves"')}
+                        ${this.renderStatCard('Время', formatTime(session.elapsedSeconds), 'data-runtime="time"')}
+                        ${this.renderStatCard('Рекорд', result ? `${formatTime(result.time)} / ${result.moves}` : '—')}
                 </div>
             </section>
 
@@ -1108,7 +1124,7 @@ export class BulbSwitcherApp {
                         <p>Сведите все лампочки к состоянию <strong>выключено</strong>. Лишние клики тут почти всегда мстят.</p>
                     </div>
                     <div class="legend-list">
-                        ${BULB_ASSETS.slice(0, session.level.colors_count + 1).map((src, index) => `
+                        ${BULB_ASSETS.slice(0, session.level.colors_count).map((src, index) => `
                             <div class="legend-item">
                                 <img src="${src}" alt="${BULB_LABELS[index]}" />
                                 <span>${BULB_LABELS[index]}</span>
@@ -1171,9 +1187,9 @@ export class BulbSwitcherApp {
                     </p>
                 </div>
                 <div class="stat-row compact">
-                    ${this.renderStatCard('Кнопки', String(level.buttons_count))}
-                    ${this.renderStatCard('Лампы', String(level.bulbs_count))}
-                    ${this.renderStatCard('Сложность', level.complexity.toFixed(2))}
+                        ${this.renderStatCard('Кнопки', String(level.buttons_count))}
+                        ${this.renderStatCard('Лампы', String(level.bulbs_count))}
+                        ${this.renderStatCard('Сложность', level.complexity.toFixed(2))}
                 </div>
             </section>
 
@@ -1191,7 +1207,7 @@ export class BulbSwitcherApp {
                     <div class="stepper-grid">
                         ${this.renderStepper('Кнопки', 'buttons_count', level.buttons_count)}
                         ${this.renderStepper('Лампочки', 'bulbs_count', level.bulbs_count)}
-                        ${this.renderStepper('Цвета', 'colors_count', level.colors_count)}
+                        ${this.renderStepper('Состояния', 'colors_count', level.colors_count)}
                     </div>
                     <div class="stack-actions">
                         <button class="secondary-button" data-action="editor-randomize">Новые связи</button>
@@ -1311,7 +1327,7 @@ export class BulbSwitcherApp {
                         </section>
                         <section class="matrix-card">
                             <h3>Стартовое состояние</h3>
-                            <p class="subtle">Нажмите на лампочку, чтобы переключить её стартовый цвет.</p>
+                            <p class="subtle">Нажмите на лампочку, чтобы переключить её стартовое состояние.</p>
                             <div class="start-state-grid">
                                 ${Array.from({ length: level.bulbs_count }, (_, bulbIndex) => `
                                     <button
@@ -1378,7 +1394,7 @@ export class BulbSwitcherApp {
                 <article class="panel feature-card">
                     <h2>Редактор</h2>
                     <ol class="help-list">
-                        <li>Настройте число кнопок, ламп и цветов.</li>
+                        <li>Настройте число кнопок, ламп и состояний.</li>
                         <li>Соберите связи и стартовое состояние.</li>
                         <li>Сохраните уровень и сразу запускайте его в игру.</li>
                     </ol>
@@ -1387,17 +1403,17 @@ export class BulbSwitcherApp {
         `;
     }
 
-    renderStatCard(label, value) {
+    renderStatCard(label, value, valueAttributes = '') {
         return `
             <div class="stat-card">
                 <span>${escapeHtml(label)}</span>
-                <strong>${escapeHtml(value)}</strong>
+                <strong ${valueAttributes}>${escapeHtml(value)}</strong>
             </div>
         `;
     }
 
     describeLevel(level) {
-        return `${level.buttons_count} ${pluralize(level.buttons_count, 'кнопка', 'кнопки', 'кнопок')}, ${level.bulbs_count} ${pluralize(level.bulbs_count, 'лампа', 'лампы', 'ламп')}, ${level.colors_count} ${pluralize(level.colors_count, 'цвет', 'цвета', 'цветов')}.`;
+        return `${level.buttons_count} ${pluralize(level.buttons_count, 'кнопка', 'кнопки', 'кнопок')}, ${level.bulbs_count} ${pluralize(level.bulbs_count, 'лампа', 'лампы', 'ламп')}, ${level.colors_count} ${pluralize(level.colors_count, 'состояние', 'состояния', 'состояний')}.`;
     }
 
     describeLevelRef(levelRef) {
@@ -1461,7 +1477,7 @@ function normalizeBulbStates(states, bulbsCount, colorsCount) {
     const normalized = [];
 
     for (let index = 0; index < bulbsCount; index += 1) {
-        normalized.push(clamp(Number(states[index] ?? 0), 0, colorsCount));
+        normalized.push(clamp(Number(states[index] ?? 0), 0, Math.max(0, colorsCount - 1)));
     }
 
     return normalized;

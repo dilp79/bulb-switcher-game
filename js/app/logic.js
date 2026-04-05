@@ -87,14 +87,14 @@ export function normalizeLevel(rawLevel, fallback = {}) {
     const initialStates = normalizeStateArray(
         rawLevel?.initial_states ?? fallback.initial_states,
         bulbsCount,
-        colorsCount,
+        colorsCount - 1,
         0
     );
 
     const targetStates = normalizeStateArray(
         rawLevel?.target_states ?? fallback.target_states,
         bulbsCount,
-        colorsCount,
+        colorsCount - 1,
         0
     );
 
@@ -147,6 +147,10 @@ export function validateLevel(level) {
         errors.push('Стартовое состояние должно содержать хотя бы одну включённую лампочку.');
     }
 
+    if (errors.length === 0 && !findLevelSolution(level)) {
+        errors.push('Уровень должен иметь хотя бы одно решение.');
+    }
+
     return {
         valid: errors.length === 0,
         errors
@@ -155,7 +159,7 @@ export function validateLevel(level) {
 
 export function applyButtonPress(level, currentStates, buttonIndex) {
     const nextStates = [...currentStates];
-    const stepModulo = level.colors_count + 1;
+    const stepModulo = Math.max(1, level.colors_count);
 
     level.connections.forEach(([linkedButton, linkedBulb]) => {
         if (linkedButton === buttonIndex) {
@@ -220,7 +224,10 @@ export function generateInitialState(level) {
     const maxAttempts = 12;
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const pressCounts = Array.from({ length: level.buttons_count }, () => randomInt(0, level.colors_count));
+        const pressCounts = Array.from(
+            { length: level.buttons_count },
+            () => randomInt(0, Math.max(0, level.colors_count - 1))
+        );
 
         if (pressCounts.every((value) => value === 0)) {
             pressCounts[randomInt(0, level.buttons_count - 1)] = 1;
@@ -242,6 +249,60 @@ export function generateInitialState(level) {
     const fallback = [...zeroState];
     fallback[randomInt(0, level.bulbs_count - 1)] = 1;
     return fallback;
+}
+
+export function findLevelSolution(level) {
+    const modulo = Math.max(1, Number(level.colors_count) || 0);
+    const buttonsCount = Number(level.buttons_count) || 0;
+    const bulbsCount = Number(level.bulbs_count) || 0;
+
+    if (!buttonsCount || !bulbsCount) {
+        return null;
+    }
+
+    const delta = Array.from({ length: bulbsCount }, (_, index) => (
+        (Number(level.target_states[index] ?? 0) - Number(level.initial_states[index] ?? 0) + modulo) % modulo
+    ));
+
+    if (delta.every((value) => value === 0)) {
+        return Array(buttonsCount).fill(0);
+    }
+
+    const buttonEffects = Array.from({ length: buttonsCount }, () => Array(bulbsCount).fill(0));
+
+    level.connections.forEach(([buttonIndex, bulbIndex]) => {
+        if (buttonEffects[buttonIndex]?.[bulbIndex] !== undefined) {
+            buttonEffects[buttonIndex][bulbIndex] = (buttonEffects[buttonIndex][bulbIndex] + 1) % modulo;
+        }
+    });
+
+    const activeDelta = Array(bulbsCount).fill(0);
+    const pressCounts = Array(buttonsCount).fill(0);
+
+    function search(buttonIndex) {
+        if (buttonIndex >= buttonsCount) {
+            return activeDelta.every((value, index) => value === delta[index]) ? [...pressCounts] : null;
+        }
+
+        const effect = buttonEffects[buttonIndex];
+
+        for (let count = 0; count < modulo; count += 1) {
+            pressCounts[buttonIndex] = count;
+            const solution = search(buttonIndex + 1);
+            if (solution) {
+                return solution;
+            }
+
+            for (let bulbIndex = 0; bulbIndex < bulbsCount; bulbIndex += 1) {
+                activeDelta[bulbIndex] = (activeDelta[bulbIndex] + effect[bulbIndex]) % modulo;
+            }
+        }
+
+        pressCounts[buttonIndex] = 0;
+        return null;
+    }
+
+    return search(0);
 }
 
 export function createGeneratedLevel({
