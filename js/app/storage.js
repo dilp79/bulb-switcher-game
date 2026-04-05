@@ -70,11 +70,25 @@ export class StorageService {
 
     loadProgress() {
         const raw = safeParse(this.storage.getItem(STORAGE_KEYS.progress), DEFAULT_PROGRESS);
-        return {
+        const progress = {
             lastLevelRef: raw?.lastLevelRef ?? DEFAULT_PROGRESS.lastLevelRef,
             completed: raw?.completed ?? {},
             results: raw?.results ?? {}
         };
+
+        // Migrate old results that lack stars field
+        if (progress.results) {
+            for (const key of Object.keys(progress.results)) {
+                const result = progress.results[key];
+                if (result && typeof result.stars === 'undefined') {
+                    result.stars = 1; // Existing completions get 1 star by default
+                    result.xpEarned = 0;
+                    result.hintUsed = false;
+                }
+            }
+        }
+
+        return progress;
     }
 
     saveProgress() {
