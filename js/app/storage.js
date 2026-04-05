@@ -1,4 +1,5 @@
 import { DEFAULT_PLAYER, DEFAULT_PROGRESS, DEFAULT_SETTINGS, STORAGE_KEYS } from './constants.js';
+import { getRankForXp } from './player.js';
 
 const PLAYER_KEY = 'bulb-switcher.player.v1';
 
@@ -122,6 +123,7 @@ export class StorageService {
             time: bestTime,
             stars: bestStars,
             xpEarned: (prev?.xpEarned || 0) + xpEarned,
+            // "Best run" semantics: hintUsed is false if ANY attempt was hint-free
             hintUsed: prev ? (prev.hintUsed && hintUsed) : hintUsed,
         };
         this.progress.completed[key] = true;
@@ -191,6 +193,7 @@ export class StorageService {
     addPlayerXp(amount) {
         const player = this.loadPlayer();
         player.xp += amount;
+        player.rank = getRankForXp(player.xp);
         this.savePlayer(player);
         return player;
     }

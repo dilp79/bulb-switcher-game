@@ -1,4 +1,4 @@
-import { LIMITS } from './constants.js';
+import { LIMITS, STAR_CONFIG } from './constants.js';
 
 export function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -316,9 +316,9 @@ export function calculateStars({ optimalMoves, actualMoves, elapsedSeconds, hint
         return 1;
     }
 
-    const timeTarget = optimalMoves * 5;
-    const movesFor3Star = optimalMoves * 1.5;
-    const movesFor2Star = optimalMoves * 2;
+    const timeTarget = optimalMoves * STAR_CONFIG.timePerMove;
+    const movesFor3Star = optimalMoves * STAR_CONFIG.moveMultiplier3Star;
+    const movesFor2Star = optimalMoves * STAR_CONFIG.moveMultiplier2Star;
 
     if (actualMoves <= movesFor3Star && elapsedSeconds <= timeTarget) {
         return 3;

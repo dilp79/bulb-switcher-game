@@ -1084,7 +1084,7 @@ export class BulbSwitcherApp {
                         ${this.renderStatCard('Ходы', String(session.moves), 'data-runtime="moves"')}
                         ${(() => {
                             const thresholdHtml = session.optimalMoves
-                                ? `<span class="game-threshold" title="Ходов для 3★ / 2★">★${Math.ceil(session.optimalMoves * 1.5)} · ★★${Math.ceil(session.optimalMoves * 2)}</span>`
+                                ? `<span class="game-threshold" title="Ходов для 3★ / 2★">3★: ${Math.ceil(session.optimalMoves * STAR_CONFIG.moveMultiplier3Star)} · 2★: ${Math.ceil(session.optimalMoves * STAR_CONFIG.moveMultiplier2Star)}</span>`
                                 : '';
                             return thresholdHtml;
                         })()}
