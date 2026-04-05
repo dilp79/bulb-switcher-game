@@ -1,13 +1,15 @@
-import { APP_TITLE, BULB_ASSETS, BULB_LABELS, LIMITS, UI_TEXT } from './constants.js';
+import { APP_TITLE, BULB_ASSETS, BULB_LABELS, LIMITS, STAR_CONFIG, UI_TEXT } from './constants.js';
 import { AudioService } from './audio.js';
 import {
     applyButtonPress,
     calculateComplexity,
+    calculateStars,
     clamp,
     createGeneratedLevel,
     formatTime,
     generateConnections,
     generateInitialState,
+    getOptimalMoveCount,
     isSolved,
     normalizeConnections,
     normalizeLevel,
@@ -15,6 +17,7 @@ import {
 } from './logic.js';
 import { LevelRepository } from './level-repository.js';
 import { StorageService } from './storage.js';
+import { calculateXpForLevel, getRankProgress } from './player.js';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -341,17 +344,41 @@ export class BulbSwitcherApp {
         const totalSeconds = Math.floor((Date.now() - session.startedAt) / 1000);
         session.elapsedSeconds = totalSeconds;
 
-        const previous = this.storage.getLevelResult(session.levelRef);
-        const bestResult = this.storage.recordLevelCompletion(session.levelRef, totalSeconds, session.moves);
+        const optimalMoves = getOptimalMoveCount(session.level);
+        const stars = calculateStars({
+            optimalMoves,
+            actualMoves: session.moves,
+            elapsedSeconds: totalSeconds,
+            hintUsed: session.hintUsed,
+        });
+
+        const isFirstClear = !this.storage.isLevelCompleted(session.levelRef);
+        const complexity = session.level.complexity || 1;
+        const player = this.storage.loadPlayer();
+        const xpEarned = calculateXpForLevel({
+            stars,
+            complexity,
+            isFirstClear,
+            streakDays: player.streak.current,
+        });
+
+        const result = this.storage.recordLevelCompletion(
+            session.levelRef, totalSeconds, session.moves, stars, xpEarned, session.hintUsed
+        );
+
+        const updatedPlayer = this.storage.addPlayerXp(xpEarned);
+        const rankProgress = getRankProgress(updatedPlayer.xp);
+        const previousRankProgress = getRankProgress(updatedPlayer.xp - xpEarned);
 
         session.victory = {
             totalSeconds,
             moves: session.moves,
-            newRecord:
-                !previous ||
-                bestResult.time !== previous.time ||
-                bestResult.moves !== previous.moves,
-            nextLevelRef: this.levelRepository.getNextLevelRef(session.levelRef)
+            newRecord: result.newRecord,
+            stars,
+            xpEarned,
+            rankProgress,
+            previousRank: previousRankProgress.rank,
+            nextLevelRef: this.levelRepository.getNextLevelRef(session.levelRef),
         };
 
         this.audio.play('victory');
@@ -1150,13 +1177,40 @@ export class BulbSwitcherApp {
         return `
             <div class="victory-overlay">
                 <div class="victory-card">
-                    <img class="confetti" src="assets/images/confetti.gif" alt="" />
                     <p class="eyebrow">Уровень пройден</p>
-                    <h2>${victory.newRecord ? 'Новый лучший результат' : 'Схема погашена'}</h2>
-                    <div class="victory-stats">
-                        ${this.renderStatCard('Время', formatTime(victory.totalSeconds))}
-                        ${this.renderStatCard('Ходы', String(victory.moves))}
+                    <h2>${victory.newRecord ? 'Новый лучший результат!' : 'Схема погашена'}</h2>
+
+                    <div class="victory-stars">
+                        ${[1, 2, 3].map(i =>
+                            `<span class="victory-star ${i <= victory.stars ? 'is-earned' : 'is-empty'}">★</span>`
+                        ).join('')}
                     </div>
+
+                    <div class="victory-stats">
+                        ${this.renderStatCard('Ходы', String(victory.moves))}
+                        ${this.renderStatCard('Время', formatTime(victory.totalSeconds))}
+                    </div>
+
+                    <div class="victory-xp">
+                        <span class="victory-xp-amount">+${victory.xpEarned} XP</span>
+                        ${victory.previousRank < victory.rankProgress.rank
+                            ? `<div class="victory-rankup">Новый ранг: ${victory.rankProgress.title}!</div>`
+                            : ''
+                        }
+                    </div>
+
+                    <div class="victory-rank-bar">
+                        <div class="victory-rank-label">
+                            <span>${victory.rankProgress.title}</span>
+                            <span>Ур. ${victory.rankProgress.rank}</span>
+                        </div>
+                        <div class="victory-rank-track">
+                            <div class="victory-rank-fill" style="width: ${Math.round(victory.rankProgress.fraction * 100)}%"></div>
+                        </div>
+                    </div>
+
+                    ${victory.newRecord ? '<div class="victory-record">🏆 Новый рекорд!</div>' : ''}
+
                     <div class="hero-actions">
                         <button class="primary-button" data-action="victory-next">
                             ${victory.nextLevelRef ? 'Следующий уровень' : 'К выбору уровней'}
