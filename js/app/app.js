@@ -212,6 +212,8 @@ export class BulbSwitcherApp {
             hintedButtonIndex: null,
             victory: null
         };
+        const optimalMoves = getOptimalMoveCount(this.state.game.level);
+        this.state.game.optimalMoves = optimalMoves;
         this.state.screen = 'game';
         this.startGameTimer();
         this.render();
@@ -1080,6 +1082,12 @@ export class BulbSwitcherApp {
                 </div>
                 <div class="stat-row compact">
                         ${this.renderStatCard('Ходы', String(session.moves), 'data-runtime="moves"')}
+                        ${(() => {
+                            const thresholdHtml = session.optimalMoves
+                                ? `<span class="game-threshold" title="Ходов для 3★ / 2★">★${Math.ceil(session.optimalMoves * 1.5)} · ★★${Math.ceil(session.optimalMoves * 2)}</span>`
+                                : '';
+                            return thresholdHtml;
+                        })()}
                         ${this.renderStatCard('Время', formatTime(session.elapsedSeconds), 'data-runtime="time"')}
                         ${this.renderStatCard('Рекорд', result ? `${formatTime(result.time)} / ${result.moves}` : '—')}
                 </div>
