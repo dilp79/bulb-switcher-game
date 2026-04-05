@@ -305,6 +305,24 @@ export function findLevelSolution(level) {
     return search(0);
 }
 
+export function calculateStars({ optimalMoves, actualMoves, elapsedSeconds, hintUsed }) {
+    if (hintUsed || optimalMoves === null) {
+        return 1;
+    }
+
+    const timeTarget = optimalMoves * 5;
+    const movesFor3Star = optimalMoves * 1.5;
+    const movesFor2Star = optimalMoves * 2;
+
+    if (actualMoves <= movesFor3Star && elapsedSeconds <= timeTarget) {
+        return 3;
+    }
+    if (actualMoves <= movesFor2Star) {
+        return 2;
+    }
+    return 1;
+}
+
 export function createGeneratedLevel({
     name,
     buttonsCount,
