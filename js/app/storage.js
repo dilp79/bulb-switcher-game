@@ -1,4 +1,6 @@
-import { DEFAULT_PROGRESS, DEFAULT_SETTINGS, STORAGE_KEYS } from './constants.js';
+import { DEFAULT_PLAYER, DEFAULT_PROGRESS, DEFAULT_SETTINGS, STORAGE_KEYS } from './constants.js';
+
+const PLAYER_KEY = 'bulb-switcher.player.v1';
 
 function safeParse(value, fallback) {
     if (!value) {
@@ -143,5 +145,31 @@ export class StorageService {
 
     getSettings() {
         return { ...this.settings };
+    }
+
+    loadPlayer() {
+        try {
+            const raw = this.storage.getItem(PLAYER_KEY);
+            if (!raw) return { ...DEFAULT_PLAYER };
+            const parsed = JSON.parse(raw);
+            return { ...DEFAULT_PLAYER, ...parsed };
+        } catch {
+            return { ...DEFAULT_PLAYER };
+        }
+    }
+
+    savePlayer(player) {
+        try {
+            this.storage.setItem(PLAYER_KEY, JSON.stringify(player));
+        } catch {
+            // Storage full or unavailable — silent fail
+        }
+    }
+
+    addPlayerXp(amount) {
+        const player = this.loadPlayer();
+        player.xp += amount;
+        this.savePlayer(player);
+        return player;
     }
 }
