@@ -94,19 +94,27 @@ export class StorageService {
         this.saveProgress();
     }
 
-    recordLevelCompletion(levelRef, time, moves) {
+    recordLevelCompletion(levelRef, time, moves, stars, xpEarned, hintUsed) {
         const key = serializeLevelRef(levelRef);
-        const current = this.progress.results[key];
+        const prev = this.progress.results[key];
 
-        if (!current || time < current.time || (time === current.time && moves < current.moves)) {
-            this.progress.results[key] = { time, moves };
-        }
+        const bestMoves = prev ? Math.min(prev.moves, moves) : moves;
+        const bestTime = prev ? Math.min(prev.time, time) : time;
+        const bestStars = prev ? Math.max(prev.stars || 0, stars) : stars;
+        const newRecord = !prev || moves < prev.moves || time < prev.time;
 
+        this.progress.results[key] = {
+            moves: bestMoves,
+            time: bestTime,
+            stars: bestStars,
+            xpEarned: (prev?.xpEarned || 0) + xpEarned,
+            hintUsed: prev ? (prev.hintUsed && hintUsed) : hintUsed,
+        };
         this.progress.completed[key] = true;
         this.progress.lastLevelRef = { ...levelRef };
         this.saveProgress();
 
-        return this.progress.results[key];
+        return { newRecord, bestStars };
     }
 
     getLevelResult(levelRef) {
