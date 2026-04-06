@@ -1,4 +1,4 @@
-import { LIMITS } from './constants.js';
+import { LIMITS, STAR_CONFIG } from './constants.js';
 
 export function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -303,6 +303,30 @@ export function findLevelSolution(level) {
     }
 
     return search(0);
+}
+
+export function getOptimalMoveCount(level) {
+    const solution = findLevelSolution(level);
+    if (!solution) return null;
+    return solution.reduce((sum, presses) => sum + presses, 0);
+}
+
+export function calculateStars({ optimalMoves, actualMoves, elapsedSeconds, hintUsed }) {
+    if (hintUsed || optimalMoves === null) {
+        return 1;
+    }
+
+    const timeTarget = optimalMoves * STAR_CONFIG.timePerMove;
+    const movesFor3Star = optimalMoves * STAR_CONFIG.moveMultiplier3Star;
+    const movesFor2Star = optimalMoves * STAR_CONFIG.moveMultiplier2Star;
+
+    if (actualMoves <= movesFor3Star && elapsedSeconds <= timeTarget) {
+        return 3;
+    }
+    if (actualMoves <= movesFor2Star) {
+        return 2;
+    }
+    return 1;
 }
 
 export function createGeneratedLevel({

@@ -1189,3 +1189,94 @@ img {
         align-items: flex-start;
     }
 }
+
+/* Victory overlay — stars, XP, rank */
+.victory-stars {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.victory-star {
+    font-size: 2.8rem;
+    line-height: 1;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.victory-star.is-earned {
+    color: var(--primary);
+    text-shadow: 0 0 20px rgba(255, 179, 0, 0.5);
+}
+
+.victory-star.is-empty {
+    color: var(--text-dim);
+    opacity: 0.3;
+}
+
+.victory-xp {
+    margin: 16px 0;
+    text-align: center;
+}
+
+.victory-xp-amount {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--secondary);
+}
+
+.victory-rankup {
+    margin-top: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-shadow: 0 0 12px rgba(255, 179, 0, 0.4);
+}
+
+.victory-rank-bar {
+    margin: 0 0 20px;
+}
+
+.victory-rank-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+}
+
+.victory-rank-track {
+    height: 8px;
+    background: var(--bg-soft);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.victory-rank-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-strong));
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.victory-record {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--success);
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.level-card-stars {
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    color: var(--primary);
+}
+
+.game-threshold {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    opacity: 0.6;
+    margin-left: 8px;
+}
