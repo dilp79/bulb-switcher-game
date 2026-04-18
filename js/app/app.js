@@ -765,6 +765,13 @@ export class BulbSwitcherApp {
     }
 
     renderApp() {
+        const builtInBlocks = this.levelRepository.getBuiltInBlocks();
+        const builtInLevelCount = builtInBlocks.reduce((sum, block) => sum + block.levels.length, 0);
+        const completedCount = builtInBlocks
+            .flatMap((block) => block.levels.map((_, levelIndex) => this.levelRepository.getBuiltInLevelRef(block.id, levelIndex)))
+            .filter((levelRef) => this.storage.isLevelCompleted(levelRef)).length;
+        const player = this.storage.loadPlayer();
+        const rankProgress = getRankProgress(player.xp);
         const content = this.renderScreen();
 
         return `
@@ -772,22 +779,39 @@ export class BulbSwitcherApp {
                 <div class="ambient ambient-a"></div>
                 <div class="ambient ambient-b"></div>
                 <header class="app-header">
-                    <button class="brand" data-action="nav-home">
-                        <span class="brand-mark">●</span>
-                        <span>
-                            <strong>${APP_TITLE}</strong>
-                            <small>Головоломка про скрытые связи</small>
-                        </span>
-                    </button>
-                    <nav class="app-nav">
+                    <div class="header-block brand-block">
+                        <button class="brand" data-action="nav-home">
+                            <span class="brand-mark" aria-hidden="true">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </span>
+                            <span class="brand-copy">
+                                <strong>${APP_TITLE}</strong>
+                                <small>Switchboard logic console</small>
+                            </span>
+                        </button>
+                        <div class="header-inline-status">
+                            <span class="signal-pill muted">${completedCount}/${builtInLevelCount} секций погашено</span>
+                        </div>
+                    </div>
+                    <nav class="app-nav header-block">
                         ${this.renderNavButton('Главная', 'nav-home', this.state.screen === 'home')}
-                        ${this.renderNavButton('Уровни', 'nav-levels', this.state.screen === 'levels')}
-                        ${this.renderNavButton('Редактор', 'nav-editor', this.state.screen === 'editor')}
+                        ${this.renderNavButton('Архив', 'nav-levels', this.state.screen === 'levels')}
+                        ${this.renderNavButton('Лаборатория', 'nav-editor', this.state.screen === 'editor')}
                         ${this.renderNavButton('Справка', 'nav-help', this.state.screen === 'help')}
                     </nav>
-                    <button class="sound-toggle" data-action="toggle-sound">
-                        Звук: ${this.storage.getSettings().soundEnabled ? 'вкл' : 'выкл'}
-                    </button>
+                    <div class="header-side">
+                        <div class="shell-status header-block">
+                            <span class="shell-status-label">Оператор</span>
+                            <strong>${escapeHtml(rankProgress.title)}</strong>
+                            <small>Ранг ${rankProgress.rank} · ${player.xp} XP</small>
+                        </div>
+                        <button class="sound-toggle header-block" data-action="toggle-sound">
+                            <span>Аудио</span>
+                            <strong>${this.storage.getSettings().soundEnabled ? 'ON' : 'OFF'}</strong>
+                        </button>
+                    </div>
                 </header>
                 ${this.renderNotice()}
                 <main class="app-main">
@@ -871,42 +895,45 @@ export class BulbSwitcherApp {
         const completedCount = builtInBlocks
             .flatMap((block) => block.levels.map((_, levelIndex) => this.levelRepository.getBuiltInLevelRef(block.id, levelIndex)))
             .filter((levelRef) => this.storage.isLevelCompleted(levelRef)).length;
+        const player = this.storage.loadPlayer();
+        const rankProgress = getRankProgress(player.xp);
         const lastLevelSummary = lastLevel
             ? `${this.describeLevelRef(lastLevelRef)} · ${lastLevel.name}`
             : 'Одна подсказка на уровень. Играть можно и мышью, и клавиатурой.';
 
         return `
             <section class="hero hero-home">
-                <div class="hero-copy">
+                <div class="panel hero-copy">
                     <p class="eyebrow">Bulb Switcher</p>
                     <div class="hero-chip-row">
-                        <span class="signal-pill">Puzzle console</span>
-                        <span class="signal-pill">${builtInLevelCount} уровней</span>
-                        <span class="signal-pill">Редактор внутри</span>
+                        <span class="signal-pill">Campaign ${builtInLevelCount}</span>
+                        <span class="signal-pill">1 подсказка за уровень</span>
+                        <span class="signal-pill">Local workshop</span>
                     </div>
-                    <h1>Считывайте схему. Находите скрытые связи. Гасите весь щит.</h1>
+                    <h1>Гасите секции щита, читая поле как скрытую схему, а не как шум ламп.</h1>
                     <p class="lead">
-                        Каждое нажатие меняет сразу несколько ламп. Красота этой игры в том, что решение
-                        выглядит как восстановление скрытой проводки по косвенным сигналам.
+                        Здесь ценится не скорость клика, а дисциплина наблюдения. Каждое нажатие меняет
+                        несколько узлов сразу, и удачный проход ощущается как расшифровка панели управления
+                        по косвенным сигналам.
                     </p>
                     <div class="hero-actions">
                         <button class="primary-button" data-action="continue-last">
                             ${lastLevel ? 'Продолжить' : 'Начать с первого уровня'}
                         </button>
-                        <button class="secondary-button" data-action="nav-levels">Открыть каталог</button>
+                        <button class="secondary-button" data-action="nav-levels">Открыть архив</button>
                     </div>
                     <p class="hero-note">${escapeHtml(lastLevelSummary)}</p>
                     <div class="hero-stats">
-                        ${this.renderStatCard('Встроенных уровней', String(builtInLevelCount))}
-                        ${this.renderStatCard('Пройдено', `${completedCount}/${builtInLevelCount}`)}
-                        ${this.renderStatCard('Пользовательских', String(this.levelRepository.listUserLevels().length))}
+                        ${this.renderStatCard('Погашено', `${completedCount}/${builtInLevelCount}`)}
+                        ${this.renderStatCard('Оператор', rankProgress.title)}
+                        ${this.renderStatCard('Модулей в лаборатории', String(this.levelRepository.listUserLevels().length))}
                     </div>
                 </div>
-                <div class="hero-visual hero-board">
+                <div class="panel hero-visual hero-board">
                     <div class="hero-board-shell">
                         <div class="hero-board-topline">
-                            <span class="board-kicker">Signal map</span>
-                            <span class="board-score">${completedCount}/${builtInLevelCount}</span>
+                            <span class="board-kicker">Live console</span>
+                            <span class="board-score">${escapeHtml(rankProgress.title)}</span>
                         </div>
                         <div class="hero-wire-layer" aria-hidden="true">
                             <span class="hero-wire wire-1"></span>
@@ -933,9 +960,18 @@ export class BulbSwitcherApp {
                             <button class="hero-mini-button" type="button">3</button>
                         </div>
                         <div class="hero-board-footer">
-                            <span>1 hint per run</span>
-                            <span>4 bulb states</span>
-                            <span>local editor</span>
+                            <div class="console-readout">
+                                <span>Подсказка</span>
+                                <strong>1 на забег</strong>
+                            </div>
+                            <div class="console-readout">
+                                <span>Состояния ламп</span>
+                                <strong>до 4</strong>
+                            </div>
+                            <div class="console-readout">
+                                <span>Архив погашений</span>
+                                <strong>${completedCount}/${builtInLevelCount}</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -943,24 +979,35 @@ export class BulbSwitcherApp {
 
             <section class="card-grid feature-grid">
                 <article class="panel feature-card">
-                    <p class="eyebrow">Продолжение</p>
-                    <h2>${lastLevel ? escapeHtml(lastLevel.name) : 'Первый встроенный уровень'}</h2>
-                    <p>${lastLevel ? this.describeLevelRef(lastLevelRef) : 'Стартовый уровень каталога.'}</p>
+                    <p class="eyebrow">Текущая линия</p>
+                    <h2>${lastLevel ? escapeHtml(lastLevel.name) : 'Первый контур кампании'}</h2>
+                    <p>${lastLevel ? this.describeLevelRef(lastLevelRef) : 'Самый быстрый способ войти в ритм игры и понять поведение панели.'}</p>
+                    <div class="meta-list">
+                        <span>${lastLevel ? this.describeLevel(lastLevel) : 'Старт каталога'}</span>
+                    </div>
                     <button class="secondary-button" data-action="continue-last">
-                        ${lastLevel ? 'Вернуться в игру' : 'Играть'}
+                        ${lastLevel ? 'Вернуться к панели' : 'Запустить контур'}
                     </button>
                 </article>
                 <article class="panel feature-card">
-                    <p class="eyebrow">Каталог</p>
-                    <h2>Все блоки и рекорды</h2>
-                    <p>Все встроенные блоки на виду. Видно, что закрыто, что новое и где ваш лучший прогон.</p>
-                    <button class="secondary-button" data-action="nav-levels">Открыть уровни</button>
+                    <p class="eyebrow">Архив</p>
+                    <h2>Блоки, рекорды и прогресс кампании</h2>
+                    <p>Смотрите, какие секции уже погашены, где остались чистые проходы и на каких уровнях можно снять больше звёзд.</p>
+                    <div class="meta-list">
+                        <span>${builtInLevelCount} уровней</span>
+                        <span>${completedCount} очищено</span>
+                    </div>
+                    <button class="secondary-button" data-action="nav-levels">Открыть архив</button>
                 </article>
                 <article class="panel feature-card">
-                    <p class="eyebrow">Редактор</p>
-                    <h2>Соберите свой щит</h2>
-                    <p>Меняйте число кнопок, ламп и состояний, собирайте проводку и тут же проверяйте, как она играется.</p>
-                    <button class="secondary-button" data-action="nav-editor">Открыть редактор</button>
+                    <p class="eyebrow">Лаборатория</p>
+                    <h2>Соберите собственный модуль</h2>
+                    <p>Меняйте число кнопок, ламп и состояний, проектируйте скрытую проводку и сразу же запускайте её в тестовый прогон.</p>
+                    <div class="meta-list">
+                        <span>${this.levelRepository.listUserLevels().length} сохранено</span>
+                        <span>${escapeHtml(rankProgress.title)}</span>
+                    </div>
+                    <button class="secondary-button" data-action="nav-editor">Открыть лабораторию</button>
                 </article>
             </section>
         `;
@@ -990,13 +1037,13 @@ export class BulbSwitcherApp {
         return `
             <section class="panel section-header">
                 <div>
-                    <p class="eyebrow">Выбор уровня</p>
+                    <p class="eyebrow">Mission archive</p>
                     <h1>${escapeHtml(block.title)}</h1>
                     <p class="lead">${escapeHtml(block.description)}</p>
                     <div class="block-summary-strip">
                         <span class="signal-pill">${block.levels.length} уровней</span>
                         <span class="signal-pill">${completedInBlock} пройдено</span>
-                        <span class="signal-pill">${block.source === 'user' ? 'Local storage' : 'Built-in block'}</span>
+                        <span class="signal-pill">${block.source === 'user' ? 'Local workshop' : 'Campaign block'}</span>
                     </div>
                 </div>
                 <div class="tab-row">
@@ -1032,31 +1079,31 @@ export class BulbSwitcherApp {
         return `
             <article class="panel level-card ${completed ? 'is-completed' : ''}">
                 <div class="level-card-head">
-                    <p class="eyebrow">${block.source === 'user' ? 'Мой уровень' : `Уровень ${index + 1}`}</p>
-                    ${completed ? '<span class="level-badge">Пройден</span>' : '<span class="level-badge muted">Новый</span>'}
+                    <p class="eyebrow">${block.source === 'user' ? 'Workshop module' : `Сектор ${index + 1}`}</p>
+                    ${completed ? '<span class="level-badge">Погашен</span>' : '<span class="level-badge muted">Новый</span>'}
                 </div>
-                <h3>${escapeHtml(level.name)}</h3>
                 <div class="level-card-number">${block.source === 'user' ? 'U' : index + 1}</div>
+                <h3>${escapeHtml(level.name)}</h3>
+                <p class="subtle">${this.describeLevel(level)}</p>
                 <div class="meta-list">
-                    <span>${level.buttons_count} ${pluralize(level.buttons_count, 'кнопка', 'кнопки', 'кнопок')}</span>
-                    <span>${level.bulbs_count} ${pluralize(level.bulbs_count, 'лампа', 'лампы', 'ламп')}</span>
-                    <span>${level.colors_count} ${pluralize(level.colors_count, 'состояние', 'состояния', 'состояний')}</span>
                     <span>Сложность ${level.complexity.toFixed(2)}</span>
+                    <span>${level.connections.length} ${pluralize(level.connections.length, 'связь', 'связи', 'связей')}</span>
+                    ${result?.stars ? `<span class="level-card-stars">${'★'.repeat(result.stars)}${'☆'.repeat(3 - result.stars)}</span>` : '<span>★☆☆</span>'}
                 </div>
                 <div class="record-strip">
                     <span>Рекорд: ${result ? formatTime(result.time) : '—'}</span>
                     <span>Ходы: ${result ? result.moves : '—'}</span>
-                    ${result?.stars ? `<span class="level-card-stars">${'★'.repeat(result.stars)}${'☆'.repeat(3 - result.stars)}</span>` : ''}
+                    <span>${completed ? 'Маршрут сохранён' : 'Контур не вскрыт'}</span>
                 </div>
                 <div class="level-card-actions">
-                    <button class="primary-button" data-action="${action}" ${targetAttrs}>Играть</button>
+                    <button class="primary-button" data-action="${action}" ${targetAttrs}>Запустить</button>
                     ${block.source === 'user' ? `
                         <button class="ghost-button" data-action="editor-open-existing" data-level-id="${level.id}">
-                            Править
+                            Править модуль
                         </button>
                     ` : ''}
                 </div>
-                ${isLastPlayed ? '<p class="subtle">Последний открытый уровень</p>' : ''}
+                ${isLastPlayed ? '<p class="subtle">Последняя активная панель</p>' : ''}
             </article>
         `;
     }
@@ -1072,24 +1119,39 @@ export class BulbSwitcherApp {
             : this.levelRepository.getUserBlock();
         const result = this.storage.getLevelResult(session.levelRef);
         const hintBulbs = new Set(session.hintPairs.map(([, bulbIndex]) => bulbIndex));
+        const activeBulbs = session.currentStates.filter((state) => state > 0).length;
+        const solvedBulbs = session.level.bulbs_count - activeBulbs;
+        const blackoutPercent = Math.round((solvedBulbs / session.level.bulbs_count) * 100);
+        const optimalMovesHint = session.optimalMoves
+            ? `3★ до ${Math.ceil(session.optimalMoves * STAR_CONFIG.moveMultiplier3Star)} ходов · 2★ до ${Math.ceil(session.optimalMoves * STAR_CONFIG.moveMultiplier2Star)}`
+            : 'Порог звёзд будет рассчитан автоматически.';
+        const scannerStatus = session.hintSelectionMode
+            ? 'Сканер: выберите кнопку'
+            : session.hintUsed
+                ? 'Сканер: израсходован'
+                : 'Сканер: готов';
 
         return `
             <section class="panel section-header">
                 <div>
                     <p class="eyebrow">${escapeHtml(block?.title ?? 'Уровень')}</p>
                     <h1>${escapeHtml(session.level.name)}</h1>
-                    <p class="lead">${this.describeLevel(session.level)}</p>
+                    <p class="lead">
+                        ${this.describeLevel(session.level)} Следите за тем, какие узлы ещё светятся после каждого
+                        ввода, и держите маршрут коротким.
+                    </p>
                 </div>
-                <div class="stat-row compact">
+                <div class="section-side">
+                    <div class="stat-row compact">
                         ${this.renderStatCard('Ходы', String(session.moves), 'data-runtime="moves"')}
-                        ${(() => {
-                            const thresholdHtml = session.optimalMoves
-                                ? `<span class="game-threshold" title="Ходов для 3★ / 2★">3★: ${Math.ceil(session.optimalMoves * STAR_CONFIG.moveMultiplier3Star)} · 2★: ${Math.ceil(session.optimalMoves * STAR_CONFIG.moveMultiplier2Star)}</span>`
-                                : '';
-                            return thresholdHtml;
-                        })()}
                         ${this.renderStatCard('Время', formatTime(session.elapsedSeconds), 'data-runtime="time"')}
+                        ${this.renderStatCard('Активных ламп', String(activeBulbs))}
                         ${this.renderStatCard('Рекорд', result ? `${formatTime(result.time)} / ${result.moves}` : '—')}
+                    </div>
+                    <div class="block-summary-strip">
+                        <span class="signal-pill">${session.hintUsed ? 'Подсказка израсходована' : 'Подсказка доступна'}</span>
+                        <span class="signal-pill">${optimalMovesHint}</span>
+                    </div>
                 </div>
             </section>
 
@@ -1097,11 +1159,11 @@ export class BulbSwitcherApp {
                 <article class="panel board-panel">
                     <div class="board-toolbar">
                         <div>
-                            <h2>Игровое поле</h2>
+                            <h2>Живой щит</h2>
                             <p class="subtle">
                                 ${session.hintSelectionMode
-                                    ? 'Подсказка активна: выберите кнопку, чьи связи нужно показать.'
-                                    : 'Нажмите на кнопку или используйте клавиши 1-8.'}
+                                    ? 'Подсказка активна: выберите кнопку и временно вскройте её реальные связи.'
+                                    : 'Нажмите на кнопку или используйте клавиши 1-8, чтобы читать панель в динамике.'}
                             </p>
                         </div>
                         <div class="toolbar-actions">
@@ -1117,26 +1179,49 @@ export class BulbSwitcherApp {
                     </div>
                     <div class="board-status-strip">
                         <span class="signal-pill">Цель: погасить всё поле</span>
+                        <span class="signal-pill">${activeBulbs} активных узлов</span>
+                        <span class="signal-pill">${scannerStatus}</span>
                         <span class="signal-pill">H: подсказка</span>
                         <span class="signal-pill">R: рестарт</span>
                     </div>
-                    <div class="puzzle-stage" id="game-stage">
+                    <div
+                        class="puzzle-stage game-stage ${session.hintSelectionMode ? 'is-arming' : ''} ${session.hintPairs.length ? 'is-revealing' : ''}"
+                        id="game-stage"
+                    >
                         <svg class="connection-overlay" id="game-overlay" aria-hidden="true"></svg>
-                        <div class="stage-title stage-title-top">Лампочки</div>
+                        <div class="stage-diagnostics">
+                            <div class="stage-meter">
+                                <span>Blackout</span>
+                                <strong>${blackoutPercent}%</strong>
+                                <div class="stage-meter-track">
+                                    <div class="stage-meter-fill" style="width: ${blackoutPercent}%"></div>
+                                </div>
+                            </div>
+                            <div class="stage-diagnostic-chip">
+                                <span>Нейтрализовано</span>
+                                <strong>${solvedBulbs}/${session.level.bulbs_count}</strong>
+                            </div>
+                            <div class="stage-diagnostic-chip">
+                                <span>Активно</span>
+                                <strong>${activeBulbs}</strong>
+                            </div>
+                        </div>
+                        <div class="stage-title stage-title-top">Линия ламп</div>
                         <div class="bulb-row">
                             ${Array.from({ length: session.level.bulbs_count }, (_, bulbIndex) => `
                                 <div
-                                    class="bulb-node ${hintBulbs.has(bulbIndex) ? 'is-highlighted' : ''}"
+                                    class="bulb-node state-${session.currentStates[bulbIndex]} ${session.currentStates[bulbIndex] === 0 ? 'is-off' : 'is-on'} ${hintBulbs.has(bulbIndex) ? 'is-highlighted' : ''}"
                                     data-role="bulb"
                                     data-index="${bulbIndex}"
                                 >
                                     <img src="${BULB_ASSETS[session.currentStates[bulbIndex]]}" alt="${BULB_LABELS[session.currentStates[bulbIndex]]}" />
                                     <span>Лампа ${bulbIndex + 1}</span>
+                                    <small>${BULB_LABELS[session.currentStates[bulbIndex]]}</small>
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="stage-title stage-title-bottom">Переключатели</div>
-                        <div class="button-row">
+                        <div class="stage-title stage-title-bottom">Пульт ввода</div>
+                        <div class="button-row command-row">
                             ${Array.from({ length: session.level.buttons_count }, (_, buttonIndex) => `
                                 <button
                                     class="puzzle-button ${session.hintedButtonIndex === buttonIndex ? 'is-selected' : ''}"
@@ -1146,34 +1231,82 @@ export class BulbSwitcherApp {
                                     data-index="${buttonIndex}"
                                 >
                                     <img src="assets/images/button.png" alt="" />
-                                    <span>${buttonIndex + 1}</span>
+                                    <span>B${buttonIndex + 1}</span>
+                                    <small>Клавиша ${buttonIndex + 1}</small>
                                 </button>
                             `).join('')}
                         </div>
                     </div>
                     ${session.victory ? this.renderVictoryOverlay(session) : ''}
                 </article>
-                <aside class="panel side-panel mission-panel">
-                    <div class="mission-card">
-                        <p class="eyebrow">Задача</p>
-                        <h2>Погасить весь щит</h2>
-                        <p>Сведите все лампочки к состоянию <strong>выключено</strong>. Лишние клики тут почти всегда мстят.</p>
+                <aside class="panel side-panel mission-panel tactical-panel">
+                    <div class="mission-card tactical-card">
+                        <div class="tactical-card-head">
+                            <p class="eyebrow">Blackout</p>
+                            <strong>${blackoutPercent}%</strong>
+                        </div>
+                        <h2>Свести панель к нулю</h2>
+                        <div class="route-grid">
+                            <div class="route-item">
+                                <span>Погашено</span>
+                                <strong>${solvedBulbs}/${session.level.bulbs_count}</strong>
+                            </div>
+                            <div class="route-item">
+                                <span>Осталось</span>
+                                <strong>${activeBulbs}</strong>
+                            </div>
+                        </div>
+                        <div class="stage-meter-track compact">
+                            <div class="stage-meter-fill" style="width: ${blackoutPercent}%"></div>
+                        </div>
                     </div>
-                    <div class="legend-list">
+
+                    <div class="keyboard-card tactical-card">
+                        <div class="tactical-card-head">
+                            <p class="eyebrow">Сканер</p>
+                            <strong>${session.hintUsed ? '0/1' : '1/1'}</strong>
+                        </div>
+                        <div class="route-grid">
+                            <div class="route-item">
+                                <span>Статус</span>
+                                <strong>${session.hintSelectionMode ? 'Выбор' : session.hintUsed ? 'Пуст' : 'Готов'}</strong>
+                            </div>
+                            <div class="route-item">
+                                <span>Маршрут</span>
+                                <strong>${session.optimalMoves ? `${session.optimalMoves}+` : 'Auto'}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="keyboard-card tactical-card">
+                        <p class="eyebrow">Горячие клавиши</p>
+                        <div class="shortcut-grid">
+                            <div class="shortcut-pill"><kbd>1-8</kbd><span>кнопки</span></div>
+                            <div class="shortcut-pill"><kbd>H</kbd><span>сканер</span></div>
+                            <div class="shortcut-pill"><kbd>R</kbd><span>рестарт</span></div>
+                        </div>
+                    </div>
+
+                    <div class="keyboard-card tactical-card legend-card">
+                        <p class="eyebrow">Состояния</p>
+                        <div class="legend-list compact">
                         ${BULB_ASSETS.slice(0, session.level.colors_count).map((src, index) => `
                             <div class="legend-item">
                                 <img src="${src}" alt="${BULB_LABELS[index]}" />
                                 <span>${BULB_LABELS[index]}</span>
                             </div>
                         `).join('')}
+                        </div>
                     </div>
-                    <div class="keyboard-card">
-                        <p class="eyebrow">Навигация</p>
-                        <p><strong>1-8</strong> нажимают кнопки, <strong>H</strong> активирует подсказку, <strong>R</strong> перезапускает уровень.</p>
+
+                    <div class="keyboard-card tactical-card">
+                        <p class="eyebrow">Порог оценки</p>
+                        <p>${optimalMovesHint}</p>
                     </div>
+
                     <div class="side-actions">
-                        <button class="secondary-button" data-action="nav-levels">К выбору уровней</button>
-                        <button class="ghost-button" data-action="nav-home">В меню</button>
+                        <button class="secondary-button" data-action="nav-levels">К архиву</button>
+                        <button class="ghost-button" data-action="nav-home">В главное меню</button>
                     </div>
                 </aside>
             </section>
@@ -1186,8 +1319,13 @@ export class BulbSwitcherApp {
         return `
             <div class="victory-overlay">
                 <div class="victory-card">
-                    <p class="eyebrow">Уровень пройден</p>
-                    <h2>${victory.newRecord ? 'Новый лучший результат!' : 'Схема погашена'}</h2>
+                    <p class="eyebrow">Blackout confirmed</p>
+                    <h2>${victory.newRecord ? 'Сектор погашен быстрее прежнего' : 'Схема погашена'}</h2>
+                    <p class="lead compact">
+                        ${session.hintUsed
+                            ? 'Проход засчитан, но подсказка уже была потрачена в этой сессии.'
+                            : 'Чистый прогон без подсказки. Такой маршрут проще масштабировать на сложные щиты.'}
+                    </p>
 
                     <div class="victory-stars">
                         ${[1, 2, 3].map(i =>
@@ -1210,7 +1348,7 @@ export class BulbSwitcherApp {
 
                     <div class="victory-rank-bar">
                         <div class="victory-rank-label">
-                            <span>${victory.rankProgress.title}</span>
+                            <span>${escapeHtml(victory.rankProgress.title)}</span>
                             <span>Ур. ${victory.rankProgress.rank}</span>
                         </div>
                         <div class="victory-rank-track">
@@ -1218,13 +1356,15 @@ export class BulbSwitcherApp {
                         </div>
                     </div>
 
-                    ${victory.newRecord ? '<div class="victory-record">🏆 Новый рекорд!</div>' : ''}
+                    <div class="victory-record ${victory.newRecord ? '' : 'subdued'}">
+                        ${victory.newRecord ? 'Новый рекорд маршрута' : 'Маршрут сохранён в архиве'}
+                    </div>
 
                     <div class="hero-actions">
                         <button class="primary-button" data-action="victory-next">
-                            ${victory.nextLevelRef ? 'Следующий уровень' : 'К выбору уровней'}
+                            ${victory.nextLevelRef ? 'Следующий сектор' : 'К архиву уровней'}
                         </button>
-                        <button class="secondary-button" data-action="game-restart">Сыграть ещё раз</button>
+                        <button class="secondary-button" data-action="game-restart">Повторить прогон</button>
                     </div>
                 </div>
             </div>
@@ -1243,21 +1383,23 @@ export class BulbSwitcherApp {
         return `
             <section class="panel section-header">
                 <div>
-                    <p class="eyebrow">Редактор уровней</p>
-                    <h1>${editor.mode === 'edit' ? 'Редактирование' : 'Новый уровень'}</h1>
+                    <p class="eyebrow">Workshop</p>
+                    <h1>${editor.mode === 'edit' ? 'Правка модуля' : 'Сборка нового модуля'}</h1>
                     <p class="lead">
-                        Меняйте параметры, связи и стартовое состояние. Сохранение работает через localStorage.
+                        Это монтажный стол уровня: меняйте параметры, прокладывайте связи и сразу проверяйте,
+                        насколько читается ваша скрытая логика.
                     </p>
                 </div>
                 <div class="stat-row compact">
-                        ${this.renderStatCard('Кнопки', String(level.buttons_count))}
-                        ${this.renderStatCard('Лампы', String(level.bulbs_count))}
-                        ${this.renderStatCard('Сложность', level.complexity.toFixed(2))}
+                    ${this.renderStatCard('Кнопки', String(level.buttons_count))}
+                    ${this.renderStatCard('Лампы', String(level.bulbs_count))}
+                    ${this.renderStatCard('Сложность', level.complexity.toFixed(2))}
                 </div>
             </section>
 
             <section class="editor-layout">
                 <article class="panel editor-settings">
+                    <p class="eyebrow">Паспорт схемы</p>
                     <label class="field">
                         <span>Название уровня</span>
                         <input
@@ -1273,12 +1415,12 @@ export class BulbSwitcherApp {
                         ${this.renderStepper('Состояния', 'colors_count', level.colors_count)}
                     </div>
                     <div class="stack-actions">
-                        <button class="secondary-button" data-action="editor-randomize">Новые связи</button>
-                        <button class="secondary-button" data-action="editor-generate-state">Новое стартовое состояние</button>
-                        <button class="primary-button" data-action="editor-save">Сохранить</button>
-                        <button class="secondary-button" data-action="editor-play">Сохранить и играть</button>
+                        <button class="secondary-button" data-action="editor-randomize">Сгенерировать связи</button>
+                        <button class="secondary-button" data-action="editor-generate-state">Обновить старт</button>
+                        <button class="primary-button" data-action="editor-save">Сохранить модуль</button>
+                        <button class="secondary-button" data-action="editor-play">Сохранить и запустить</button>
                         ${editor.mode === 'edit'
-                            ? '<button class="ghost-button danger" data-action="editor-delete">Удалить уровень</button>'
+                            ? '<button class="ghost-button danger" data-action="editor-delete">Удалить модуль</button>'
                             : ''}
                     </div>
                     ${editor.validationErrors.length ? `
@@ -1290,10 +1432,10 @@ export class BulbSwitcherApp {
                         </div>
                     ` : `
                         <div class="validation-box is-neutral">
-                            <h3>Как редактировать</h3>
+                            <h3>Режим сборки</h3>
                             <p>1. Выберите кнопку внизу схемы.</p>
-                            <p>2. Нажмите на лампочку, чтобы включить или убрать связь.</p>
-                            <p>3. Лампочки в стартовом состоянии переключаются по клику.</p>
+                            <p>2. Нажмите на лампу, чтобы добавить или убрать связь.</p>
+                            <p>3. Стартовые состояния снизу переключаются по клику.</p>
                         </div>
                     `}
                 </article>
@@ -1301,22 +1443,22 @@ export class BulbSwitcherApp {
                 <article class="panel board-panel">
                     <div class="board-toolbar">
                         <div>
-                            <h2>Схема уровня</h2>
+                            <h2>Монтажная панель</h2>
                             <p class="subtle">
                                 ${selectedButtonIndex === null
-                                    ? 'Выберите кнопку, чтобы редактировать её связи.'
-                                    : `Выбрана кнопка ${selectedButtonIndex + 1}. Теперь нажимайте на лампочки.`}
+                                    ? 'Выберите кнопку, чтобы проектировать её маршруты.'
+                                    : `Активна кнопка ${selectedButtonIndex + 1}. Теперь переключайте нужные лампы.`}
                             </p>
                         </div>
                     </div>
                     <div class="board-status-strip">
-                        <span class="signal-pill">1. Выбери кнопку</span>
-                        <span class="signal-pill">2. Проложи связи</span>
-                        <span class="signal-pill">3. Проверь старт</span>
+                        <span class="signal-pill">${selectedButtonIndex === null ? 'Кнопка не выбрана' : `Выбрана B${selectedButtonIndex + 1}`}</span>
+                        <span class="signal-pill">Прокладывайте связи кликом по лампам</span>
+                        <span class="signal-pill">Проверяйте старт перед запуском</span>
                     </div>
                     <div class="puzzle-stage editor-stage" id="editor-stage">
                         <svg class="connection-overlay" id="editor-overlay" aria-hidden="true"></svg>
-                        <div class="stage-title stage-title-top">Лампы уровня</div>
+                        <div class="stage-title stage-title-top">Линия ламп</div>
                         <div class="bulb-row">
                             ${Array.from({ length: level.bulbs_count }, (_, bulbIndex) => `
                                 <button
@@ -1334,7 +1476,7 @@ export class BulbSwitcherApp {
                                 </button>
                             `).join('')}
                         </div>
-                        <div class="stage-title stage-title-bottom">Кнопки уровня</div>
+                        <div class="stage-title stage-title-bottom">Пульт кнопок</div>
                         <div class="button-row">
                             ${Array.from({ length: level.buttons_count }, (_, buttonIndex) => `
                                 <button
@@ -1354,6 +1496,7 @@ export class BulbSwitcherApp {
                     <div class="editor-subgrid">
                         <section class="matrix-card">
                             <h3>Матрица связей</h3>
+                            <p class="subtle">Любую ячейку можно щёлкнуть напрямую, если так быстрее собирать схему.</p>
                             <div class="connection-matrix">
                                 <div
                                     class="matrix-row matrix-head"
@@ -1390,7 +1533,7 @@ export class BulbSwitcherApp {
                         </section>
                         <section class="matrix-card">
                             <h3>Стартовое состояние</h3>
-                            <p class="subtle">Нажмите на лампочку, чтобы переключить её стартовое состояние.</p>
+                            <p class="subtle">Нажимайте на лампы, чтобы прокрутить стартовое состояние перед тестовым прогоном.</p>
                             <div class="start-state-grid">
                                 ${Array.from({ length: level.bulbs_count }, (_, bulbIndex) => `
                                     <button
@@ -1431,15 +1574,16 @@ export class BulbSwitcherApp {
         return `
             <section class="panel section-header">
                 <div>
-                    <p class="eyebrow">Справка</p>
-                    <h1>Как играть</h1>
-                    <p class="lead">Коротко: кнопки меняют связанные лампы, а ваша цель — погасить всю схему.</p>
+                    <p class="eyebrow">Field manual</p>
+                    <h1>Как читать эту панель</h1>
+                    <p class="lead">Bulb Switcher лучше работает как инженерная головоломка: меньше хаоса, больше наблюдения и гипотез.</p>
                 </div>
             </section>
 
             <section class="help-grid">
                 <article class="panel feature-card">
-                    <h2>Правила</h2>
+                    <p class="eyebrow">01</p>
+                    <h2>Сначала считывайте, потом жмите</h2>
                     <ol class="help-list">
                         <li>Каждая кнопка меняет только связанные с ней лампочки.</li>
                         <li>Состояния идут по кругу: выкл, зелёный, жёлтый, красный и снова выкл.</li>
@@ -1447,7 +1591,8 @@ export class BulbSwitcherApp {
                     </ol>
                 </article>
                 <article class="panel feature-card">
-                    <h2>Подсказка</h2>
+                    <p class="eyebrow">02</p>
+                    <h2>Используйте подсказку как сканер</h2>
                     <ol class="help-list">
                         <li>Нажмите кнопку «Подсказка».</li>
                         <li>Выберите нужную игровую кнопку.</li>
@@ -1455,11 +1600,21 @@ export class BulbSwitcherApp {
                     </ol>
                 </article>
                 <article class="panel feature-card">
-                    <h2>Редактор</h2>
+                    <p class="eyebrow">03</p>
+                    <h2>Редактор это лаборатория</h2>
                     <ol class="help-list">
                         <li>Настройте число кнопок, ламп и состояний.</li>
                         <li>Соберите связи и стартовое состояние.</li>
                         <li>Сохраните уровень и сразу запускайте его в игру.</li>
+                    </ol>
+                </article>
+                <article class="panel feature-card">
+                    <p class="eyebrow">04</p>
+                    <h2>Играйте на коротком маршруте</h2>
+                    <ol class="help-list">
+                        <li>Чем меньше лишних кликов, тем выше оценка прохождения.</li>
+                        <li>Подсказка помогает понять структуру, но не заменяет план.</li>
+                        <li>Возвращайтесь к уровням, чтобы снять больше звёзд и улучшить рекорд.</li>
                     </ol>
                 </article>
             </section>
@@ -1469,8 +1624,8 @@ export class BulbSwitcherApp {
     renderStatCard(label, value, valueAttributes = '') {
         return `
             <div class="stat-card">
-                <span>${escapeHtml(label)}</span>
-                <strong ${valueAttributes}>${escapeHtml(value)}</strong>
+                <span class="stat-label">${escapeHtml(label)}</span>
+                <strong class="stat-value" ${valueAttributes}>${escapeHtml(value)}</strong>
             </div>
         `;
     }
